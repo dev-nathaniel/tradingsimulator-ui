@@ -1,103 +1,81 @@
-import Image from "next/image";
+"use client";
+import StockList, { Stock } from "@/components/StockList";
+import StockDetails from "@/components/StockDetails";
+import PositionsPanel from "@/components/PositionsPanel";
+import NewsPanel from "@/components/NewsPanel";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+  const [user, setUser] = useState(null)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  const stocks = [
+    {
+      symbol: "AAPL",
+      name: "Apple Inc.",
+      current_price: 150.25,
+      previous_close: 148.50,
+      sector: "Technology",
+      id: "1",
+      volume: 100000,
+      market_cap: 2500000000,
+      pe_ratio: 28.5,
+      dividend_yield: 0.6,
+    }
+  ]; // Fetch or load your stocks data here
+  const positions = [
+    {
+      id: "pos1",
+      stock_symbol: "AAPL",
+      quantity: 50,
+      average_price: 145.00,
+      stock_name: "Apple Inc.",
+    }
+  ]; // Fetch or load your positions data here
+  const news = [
+    {
+      id: "news1",
+      title: "Apple Releases New iPhone Model",
+      sentiment: "positive",
+      summary: "Apple has announced the release of its latest iPhone model, featuring advanced technology and improved performance.",
+      published_date: new Date().toISOString(),
+      source: "Tech News Daily",
+      related_symbols: ["AAPL"],
+    }
+  ]; // Fetch or load your news data here
+  const isProcessing = false; // Example state for processing trades
+  const userPosition = null; // Example state for user's position
+
+  const handleExecuteTrade = (trade: { type: "buy" | "sell"; quantity: number; price: number; commission: number; }) => {
+    // Implement trade execution logic here
+    console.log("Executing trade:", trade);
+  };
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Left Column - Stocks List */}
+      <div className="lg:col-span-3">
+        <StockList
+          stocks={stocks}
+          selectedStock={selectedStock}
+          onSelectStock={setSelectedStock}
+        />
+      </div>
+
+      {/* Middle Column - Stock Details */}
+      <div className="lg:col-span-5">
+        <StockDetails
+          stock={selectedStock}
+          onExecuteTrade={handleExecuteTrade}
+          isProcessing={isProcessing}
+          userPosition={userPosition}
+        />
+      </div>
+
+      {/* Right Column - Positions & News */}
+      <div className="lg:col-span-4 space-y-6">
+        <PositionsPanel positions={positions} stocks={stocks} />
+        <NewsPanel news={news} />
+      </div>
     </div>
   );
 }
