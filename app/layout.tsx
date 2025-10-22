@@ -5,6 +5,11 @@ import "./globals.css";
 import { Briefcase, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Providers from "./providers";
+import { cloneElement, useEffect, useState } from "react";
+import AuthModal, { UserType } from "@/components/AuthModal";
+import UserDetailsBar from "@/components/UserDetailsBar";
+import Home from "./page";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,50 +29,187 @@ const geistMono = Geist_Mono({
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactElement<any, any>;
 }>) {
   const pathname = usePathname();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // track currentUserId in state so queries and auth checks react to changes
+  // const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+  //   if (typeof window === "undefined") return null;
+  //   return localStorage.getItem("currentUserId");
+  // });
+
+  // const { data: userData, isLoading } = useQuery({
+  //   queryKey: ["user", currentUserId],
+  //   enabled: !!currentUserId,
+  //   queryFn: async () => {
+  //     const userId = currentUserId;
+  //     if (!userId) return null;
+  //     const res = await fetch(`http://localhost:8080/api/v1/users/${userId}`, {
+  //       method: "GET",
+  //       headers: { "Content-Type": "application/json" },
+  //     });
+  //     if (!res.ok) return null;
+  //     return (await res.json()) as UserType;
+  //   },
+  //   // optional sensible defaults
+  //   staleTime: 1000 * 60 * 5,
+  //   refetchOnWindowFocus: false,
+  // });
+
+  // useEffect(() => {
+  //   checkAuth();
+  //   // keep local state in sync if localStorage is changed externally
+  //   const onStorage = (e: StorageEvent) => {
+  //     if (e.key === "currentUserId") {
+  //       setCurrentUserId(e.newValue);
+  //     }
+  //   };
+  //   window.addEventListener("storage", onStorage);
+  //   return () => window.removeEventListener("storage", onStorage);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [userData, currentUserId]);
+
+  // const checkAuth = () => {
+  //   // If there's no currentUserId, clear auth state
+  //   if (!currentUserId) {
+  //     setIsAuthenticated(false);
+  //     setUser(null);
+  //     return;
+  //   }
+
+    // If we have loaded userData and it looks valid, set auth
+    // if (userData && (userData as any).username) {
+    //   setUser(userData as UserType);
+    //   setIsAuthenticated(true);
+    // } else {
+    //   // Either still loading or invalid data -> not authenticated
+    //   setIsAuthenticated(false);
+    //   setUser(null);
+    // }
+  // };
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    console.log("Checking auth status...");
+    try {
+      console.log("Fetching user data for auth check...");
+      const userId = localStorage.getItem('currentUserId');
+      console.log("Found userId in localStorage:", userId);
+      const token = localStorage.getItem('authToken');
+      if (userId) {
+        const res = await fetch(`http://localhost:8080/api/v1/users/${userId}`, {
+          method: 'GET',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          },
+        });
+        if (!res.ok) {
+          throw new Error("Failed to fetch user data");
+        }
+        console.log(res, 'user fetch')
+        const currentUser = await res.json();
+        if (currentUser.username) {
+          setUser({...currentUser, token: token});
+          setIsAuthenticated(true);
+        }
+      }
+    } catch (error) {
+      // User not authenticated
+      console.log("User not authenticated:", error);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  const handleAuthSuccess = (user: UserType) => {
+    // Ensure localStorage and local state are set so useQuery will fetch the correct user
+    // const idStr = String((user as any).id ?? "");
+    // if (idStr) {
+    //   localStorage.setItem("currentUserId", idStr);
+    //   // setCurrentUserId(idStr);
+    // }
+    setUser(user);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("currentUserId");
+    localStorage.removeItem("authToken");
+    // setCurrentUserId(null);
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  console.log("layout user ", user)
+
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <div className="min-h-screen bg-[#0a0e27] text-white">
-        <nav className="border-b border-white/10 bg-[#141b2d]/80 backdrop-blur-xl sticky top-0 z-50">
-          <div className="max-w-[1800px] mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold tracking-tight">Trade Simulator</h1>
-                  <p className="text-xs text-gray-400">Profession Trading Platform</p>
-                </div>
-              </div>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Providers>
+          <div className="min-h-screen bg-[#0a0e27] text-white">
+            <nav className="border-b border-white/10 bg-[#141b2d]/80 backdrop-blur-xl sticky top-0 z-50">
+              <div className="max-w-[1800px] mx-auto px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold tracking-tight">Trade Simulator</h1>
+                      <p className="text-xs text-gray-400">Profession Trading Platform</p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center gap-6">
-                <Link
-                  href={"/"}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    pathname === "/"
-                      ? "bg-blue-500/20 text-blue-400"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
-                  }`}
-                  >
-                <Briefcase className="w-4 h-4" />
-                <span className="text-sm font-medium">Dashboard</span>
-                </Link>
+                  <div className="flex items-center gap-6">
+                    <Link
+                      href={"/"}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                        pathname === "/"
+                          ? "bg-blue-500/20 text-blue-400"
+                          : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <Briefcase className="w-4 h-4" />
+                      <span className="text-sm font-medium">Dashboard</span>
+                    </Link>
+                  </div>
+                </div>
               </div>
-            </div>
+            </nav>
+
+            {/* User Details Bar */}
+            <UserDetailsBar
+              user={user}
+              positions={[]}
+              stocks={[]}
+              onLogin={() => setAuthModalOpen(true)}
+              onLogout={handleLogout}
+              isAuthenticated={isAuthenticated}
+            />
+
+            {/* Main Content */}
+            <main className="max-w-[1800px] mx-auto p-6">
+              {/* {cloneElement(children, {
+                user,
+                isAuthenticated,
+                onLogin: () => setAuthModalOpen(true),
+              })} */}
+              <Home user={user} isAuthenticated={isAuthenticated} onLogin={()=>setAuthModalOpen(true)} />
+            </main>
+
+             {/* Auth Modal  */}
+            <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
+            
           </div>
-        </nav>
-
-        {/* Main Content */}
-        <main className="max-w-[1800px] mx-auto p-6">
-        {children}
-        </main>
-        </div>
+        </Providers>
       </body>
     </html>
   );

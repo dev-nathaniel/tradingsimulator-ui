@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   TrendingUp,
   TrendingDown,
@@ -11,11 +12,14 @@ import {
   ShoppingCart,
   DollarSign,
   Zap,
+  LogIn,
+  AlertCircle,
 } from "lucide-react";
 import { Stock } from "./StockList";
 import { Position } from "./PositionsPanel";
+import { UserType } from "./AuthModal";
 
-export default function StockDetails({ stock, onExecuteTrade, isProcessing, userPosition }: { stock: Stock | null; onExecuteTrade: (trade: { type: "buy" | "sell"; quantity: number; price: number; commission: number; }) => void; isProcessing: boolean; userPosition: Position | null; }) {
+export default function StockDetails({ stock, onExecuteTrade, isProcessing, userPosition, isAuthenticated, user, onLogin }: { stock: Stock | null; onExecuteTrade?: (trade: { positionType: "buy" | "sell"; positionVolume: number; positionAvgPrice: number; }) => void; isProcessing: boolean; userPosition: Position | null; isAuthenticated: boolean; user: UserType | null; onLogin: () => void; }) {
   const [buyQuantity, setBuyQuantity] = useState(100);
   const [sellQuantity, setSellQuantity] = useState(100);
   const [commission, setCommission] = useState(0);
@@ -35,35 +39,44 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
     );
   }
 
-  const priceChange = stock.current_price - stock.previous_close;
+  const priceChange = stock.stockPrice - stock.previous_close;
   const priceChangePercent = (priceChange / stock.previous_close) * 100;
   const isPositive = priceChange >= 0;
 
-  const spread = (stock.current_price * spreadPercent) / 100;
-  const buyPrice = stock.current_price + spread;
-  const sellPrice = stock.current_price - spread;
+  const spread = (stock.stockPrice * spreadPercent) / 100;
+  const buyPrice = stock.stockPrice + spread;
+  const sellPrice = stock.stockPrice - spread;
 
   const buyTotal = buyQuantity * buyPrice + commission;
   const sellTotal = sellQuantity * sellPrice - commission;
 
-  const canSell = userPosition && userPosition.quantity >= sellQuantity;
+  const canSell = userPosition && userPosition.positionVolume >= sellQuantity;
+  const canAffordBuy = user && user.balance >= buyTotal;
 
   const handleBuy = () => {
-    onExecuteTrade({
-      type: "buy",
-      quantity: buyQuantity,
-      price: buyPrice,
-      commission: commission,
-    });
+    if (!isAuthenticated) {
+      onLogin()
+      return;
+    }
+    // onExecuteTrade({
+    //   positionType: "buy",
+    //   positionVolume: buyQuantity,
+    //   positionAvgPrice: buyPrice,
+    //   // commission: commission,
+    // });
   };
 
   const handleSell = () => {
-    onExecuteTrade({
-      type: "sell",
-      quantity: sellQuantity,
-      price: sellPrice,
-      commission: commission,
-    });
+    if (!isAuthenticated) {
+      onLogin()
+      return;
+    }
+    // onExecuteTrade({
+    //   positionType: "sell",
+    //   positionVolume: sellQuantity,
+    //   positionAvgPrice: sellPrice,
+    //   // commission: commission,
+    // });
   };
 
   return (
@@ -73,17 +86,17 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-3xl font-bold text-white">{stock.symbol}</h2>
+              <h2 className="text-3xl font-bold text-white">{stock.stockCode}</h2>
               <Badge variant="outline" className="border-white/20 text-gray-400">
                 {stock.sector}
               </Badge>
             </div>
-            <p className="text-gray-400">{stock.name}</p>
+            <p className="text-gray-400">{stock.stockName}</p>
           </div>
 
           <div className="text-right">
             <div className="text-3xl font-bold text-white mb-1">
-              ${stock.current_price.toFixed(2)}
+              ${stock.stockPrice.toFixed(2)}
             </div>
             <div
               className={`flex items-center gap-1 text-lg font-medium ${
@@ -109,7 +122,7 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
               <span>Volume</span>
             </div>
             <div className="text-white font-bold text-lg">
-              {(stock.volume / 1000000).toFixed(2)}M
+              {(stock.stockVolume / 1000000).toFixed(2)}M
             </div>
           </div>
 
@@ -123,6 +136,15 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
             </div>
           </div>
         </div>
+
+        {!isAuthenticated && (
+          <Alert className="mb-6 bg-blue-500/10 border-blue-500/20">
+            <LogIn className="h-4 w-4" />
+            <AlertDescription className="text-blue-400">
+              Login required to place trades. You can browse all stock data without an account.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Trading Settings */}
         <div className="bg-[#0a0e27] rounded-lg p-4 mb-6">
@@ -180,13 +202,31 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
               <span className="text-white font-bold">${buyPrice.toFixed(2)}</span>
             </div>
 
+            {isAuthenticated && !canAffordBuy && (
+              <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Insufficient funds. Need ${buyTotal.toFixed(2)}, have ${user?.balance.toFixed(2)}
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button
               onClick={handleBuy}
-              disabled={isProcessing || buyQuantity <= 0}
+              disabled={isProcessing || buyQuantity <= 0 || (isAuthenticated && !canAffordBuy)}
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white h-12 text-base font-bold"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Buy {buyQuantity} @ ${buyTotal.toFixed(2)}
+              {!isAuthenticated ? (
+                <>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login to Buy
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Buy {buyQuantity} @ ${buyTotal.toFixed(2)}
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -198,7 +238,7 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
             <span>Sell Order</span>
             {userPosition && (
               <Badge variant="outline" className="ml-auto text-xs border-white/20 text-gray-400">
-                {userPosition.quantity} shares available
+                {userPosition.positionVolume} shares available
               </Badge>
             )}
           </div>
@@ -209,11 +249,11 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
               <Input
                 type="number"
                 min="1"
-                max={userPosition?.quantity || 0}
+                max={userPosition?.positionVolume || 0}
                 value={sellQuantity}
                 onChange={(e) => setSellQuantity(parseInt(e.target.value) || 1)}
                 className="bg-[#141b2d] border-white/10 text-white h-10 mt-1"
-                disabled={!userPosition}
+                disabled={!isAuthenticated || !userPosition}
               />
             </div>
 
@@ -227,8 +267,17 @@ export default function StockDetails({ stock, onExecuteTrade, isProcessing, user
               disabled={isProcessing || !canSell || sellQuantity <= 0}
               className="w-full bg-red-500 hover:bg-red-600 text-white h-12 text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <DollarSign className="w-4 h-4 mr-2" />
-              Sell {sellQuantity} @ ${sellTotal.toFixed(2)}
+              {!isAuthenticated ? (
+                <>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Login to Sell
+                </>
+              ) : (
+                <>
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Sell {sellQuantity} @ ${sellTotal.toFixed(2)}
+                </>
+              )}
             </Button>
           </div>
         </div>

@@ -6,22 +6,22 @@ import { Stock } from "./StockList";
 
 export type Position = {
     id: string;
-    stock_symbol: string;
-    quantity: number;
-    average_price: number;
-    stock_name: string;
+    stock: Stock;
+    positionVolume: number;
+    positionAvgPrice: number;
+    // stockName: string;
 }
 
 export default function PositionsPanel({ positions, stocks }: { positions: Position[]; stocks: Stock[] }) {
   const getStockPrice = (symbol: string) => {
-    const stock = stocks.find((s) => s.symbol === symbol);
-    return stock?.current_price || 0;
+    const stock = stocks.find((s) => s.stockCode === symbol);
+    return stock?.stockPrice || 0;
   };
 
   const calculatePositionValue = (position: Position) => {
-    const currentPrice = getStockPrice(position.stock_symbol);
-    const currentValue = position.quantity * currentPrice;
-    const costBasis = position.quantity * position.average_price;
+    const currentPrice = getStockPrice(position.stock.stockCode);
+    const currentValue = position.positionVolume * currentPrice;
+    const costBasis = position.positionVolume * position.positionAvgPrice;
     const profitLoss = currentValue - costBasis;
     const profitLossPercent = (profitLoss / costBasis) * 100;
 
@@ -90,8 +90,8 @@ export default function PositionsPanel({ positions, stocks }: { positions: Posit
               >
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <div className="font-bold text-white">{position.stock_symbol}</div>
-                    <div className="text-sm text-gray-400">{position.stock_name}</div>
+                    <div className="font-bold text-white">{position.stock.stockCode}</div>
+                    <div className="text-sm text-gray-400">{position.stock.stockName}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-white">
@@ -116,12 +116,12 @@ export default function PositionsPanel({ positions, stocks }: { positions: Posit
                 <div className="grid grid-cols-3 gap-4 text-xs">
                   <div>
                     <span className="text-gray-400">Shares</span>
-                    <div className="text-white font-medium mt-1">{position.quantity}</div>
+                    <div className="text-white font-medium mt-1">{position.positionVolume}</div>
                   </div>
                   <div>
                     <span className="text-gray-400">Avg Cost</span>
                     <div className="text-white font-medium mt-1">
-                      ${position.average_price.toFixed(2)}
+                      ${position.positionAvgPrice.toFixed(2)}
                     </div>
                   </div>
                   <div>

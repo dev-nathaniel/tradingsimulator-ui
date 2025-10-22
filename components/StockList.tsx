@@ -6,13 +6,13 @@ import { motion } from "motion/react";
 import { Badge } from "./ui/badge";
 
 export type Stock = {
-    symbol: string;
-    name: string;
-    current_price: number;
+    stockCode: string;
+    stockName: string;
+    stockPrice: number;
     previous_close: number;
     sector: string;
-    id: string;
-    volume: number;
+    id: number;
+    stockVolume: number;
     market_cap: number;
     pe_ratio: number;
     dividend_yield: number;
@@ -23,13 +23,13 @@ export default function StockList({ stocks, selectedStock, onSelectStock }: { st
 
     const filteredStocks = stocks.filter(
         (stock) =>
-            stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            stock.name.toLowerCase().includes(searchTerm.toLowerCase())
+            stock.stockCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            stock.stockName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const getPriceChange = (stock: Stock) => {
-        const change = stock.current_price - stock.previous_close;
-        const changePercent = (change / stock.previous_close) * 100;
+        const change = stock.stockPrice - 240;
+        const changePercent = (change / 240) * 100;
         return { change, changePercent }
     }
     return (
@@ -65,16 +65,16 @@ export default function StockList({ stocks, selectedStock, onSelectStock }: { st
                             <div className="flex items-center justify-between mb-2">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-white">{stock.symbol}</span>
+                                        <span className="font-bold text-white">{stock.stockCode}</span>
                                         <Badge variant="outline" className="text-xs border-white/20 text-gray-400">
                                             {stock.sector}
                                         </Badge>
                                     </div>
-                                    <p className="text-sm text-gray-400 mt-1">{stock.name}</p>
+                                    <p className="text-sm text-gray-400 mt-1">{stock.stockName}</p>
                                 </div>
                                 <div className="text-right">
                                     <div className="font-bold text-lg text-white">
-                                        ${stock.current_price.toFixed(2)}
+                                        ${stock.stockPrice.toFixed(2)}
                                     </div>
                                     <div
                                         className={`flex items-center gap-1 text-sm font-medium ${isPositive ? "text-emerald-400" : "text-red-400"
