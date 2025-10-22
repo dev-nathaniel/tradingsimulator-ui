@@ -34,11 +34,11 @@ export default function UserDetailsBar({
     if (!positions || !stocks || positions.length === 0) return 0;
     
     return positions.reduce((total, position) => {
-      const currentStock = stocks.find(s => s.stockCode === position.stockCode);
+      const currentStock = stocks.find(s => s.stockCode === position.stock.stockCode);
       if (!currentStock) return total;
       
-      const currentValue = position.quantity * currentStock.stockPrice;
-      const costBasis = position.quantity * position.average_price;
+      const currentValue = position.positionVolume * currentStock.stockPrice;
+      const costBasis = position.positionVolume * position.positionAvgPrice;
       return total + (currentValue - costBasis);
     }, 0);
   };
