@@ -29,7 +29,7 @@ const geistMono = Geist_Mono({
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactElement<any, any>;
+  children?: React.ReactElement<any, any>;
 }>) {
   const pathname = usePathname();
   const [authModalOpen, setAuthModalOpen] = useState(false);
